@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SevaSetu — AI Banking Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0D2B6E;--navy-mid:#1A45C8;--navy-light:#EEF2FF;
+  --red:#C8102E;--red-light:#FEF2F2;--saffron:#F97316;
+  --green:#16A34A;--green-light:#F0FDF4;--amber:#D97706;
+  --text:#0F172A;--text-mid:#334155;--text-soft:#64748B;--text-ghost:#94A3B8;
+  --border:#E2E8F0;--surface:#FFFFFF;--bg:#EEF2F9;--shruti-bg:#F8FAFF;
+  --shadow-card:0 2px 8px rgba(13,43,110,0.07),0 0 0 1px rgba(13,43,110,0.04);
+  --shadow-float:0 24px 64px rgba(13,43,110,0.22),0 4px 16px rgba(0,0,0,0.08);
+  --radius:14px;--radius-lg:20px;--radius-pill:9999px;
+  --font:'Baloo 2','Noto Sans Devanagari',system-ui,sans-serif;
+  --font-body:'DM Sans','Noto Sans Devanagari',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;user-select:none}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.material-symbols-rounded{font-family:'Material Symbols Rounded';font-style:normal;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.hidden{display:none!important}
+
+/* ===== SETUP MODAL ===== */
+#setup-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#0D2B6E,#1A45C8 50%,#C8102E);z-index:2000;display:flex;align-items:center;justify-content:center}
+#setup-overlay.hidden{display:none}
+.setup-card{background:white;border-radius:24px;padding:40px 48px;width:480px;max-width:92vw;box-shadow:var(--shadow-float)}
+.setup-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.setup-brand-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:22px}
+.setup-brand h1{font-size:1.6rem;font-weight:800;color:var(--navy)}
+.setup-brand span{font-size:.8rem;color:var(--text-soft);font-family:var(--font-body);display:block;margin-top:-4px}
+.setup-card h2{font-size:1.15rem;font-weight:700;margin-bottom:4px}
+.setup-card>p{font-size:.87rem;color:var(--text-soft);font-family:var(--font-body);margin-bottom:22px}
+.setup-field{margin-bottom:14px}
+.setup-field label{display:block;font-size:.78rem;font-weight:600;color:var(--text-mid);margin-bottom:5px;font-family:var(--font-body)}
+.setup-field input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:var(--font-body);color:var(--text);outline:none;transition:border .2s}
+.setup-field input:focus{border-color:var(--navy-mid)}
+.setup-note{font-size:.73rem;color:var(--text-ghost);font-family:var(--font-body);margin-top:3px}
+.btn-start{width:100%;padding:13px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:8px;transition:all .2s}
+.btn-start:hover{opacity:.9;transform:translateY(-1px)}
+.setup-skip{text-align:center;margin-top:12px;font-size:.79rem;color:var(--text-soft);font-family:var(--font-body)}
+.setup-skip a{color:var(--navy-mid);cursor:pointer;text-decoration:underline}
+
+/* ===== SCREENSAVER ===== */
+#screensaver{position:fixed;inset:0;z-index:1800;background:#040D24;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .8s}
+#screensaver.active{opacity:1;pointer-events:all}
+.ss-ad-img{max-width:400px;max-height:240px;object-fit:contain;border-radius:16px;opacity:.95}
+.ss-logo{display:flex;flex-direction:column;align-items:center;gap:12px}
+.ss-logo-icon{width:72px;height:72px;background:linear-gradient(135deg,var(--navy-mid),#C8102E);border-radius:20px;display:flex;align-items:center;justify-content:center;color:white;font-size:36px;animation:ss-float 3s ease-in-out infinite}
+@keyframes ss-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.ss-bank-name{font-size:2rem;font-weight:800;color:white;letter-spacing:-1px}
+.ss-tagline{font-size:1rem;color:rgba(255,255,255,.55);font-family:var(--font-body);font-style:italic}
+.ss-time{font-size:3.5rem;font-weight:800;color:white;letter-spacing:-2px;font-family:var(--font-body)}
+.ss-date{font-size:.9rem;color:rgba(255,255,255,.5);font-family:var(--font-body);margin-top:-8px}
+.ss-touch{font-size:.8rem;color:rgba(255,255,255,.35);font-family:var(--font-body);text-transform:uppercase;letter-spacing:2px;margin-top:16px;animation:ss-blink 2s ease-in-out infinite}
+@keyframes ss-blink{0%,100%{opacity:.35}50%{opacity:.8}}
+.ss-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.ss-orb-1{width:400px;height:400px;background:rgba(26,69,200,.25);top:-100px;left:-100px}
+.ss-orb-2{width:300px;height:300px;background:rgba(200,16,46,.2);bottom:-80px;right:-60px}
+
+/* ===== HEADER ===== */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:14px}
+.brand-mark{display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:17px}
+.brand-name{font-size:1.15rem;font-weight:800;color:var(--navy);letter-spacing:-.3px}
+.brand-sub{font-size:.65rem;color:var(--text-soft);font-family:var(--font-body);margin-top:-3px}
+.header-divider{width:1px;height:30px;background:var(--border)}
+.kiosk-badge{background:var(--navy-light);color:var(--navy-mid);font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:var(--radius-pill);font-family:var(--font-body)}
+.header-right{display:flex;align-items:center;gap:9px}
+.lang-toggle{display:flex;background:var(--bg);border-radius:var(--radius-pill);padding:3px;border:1px solid var(--border)}
+.lang-btn{padding:4px 13px;border-radius:var(--radius-pill);font-size:.76rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text-soft);font-family:var(--font);transition:all .2s}
+.lang-btn.active{background:var(--navy);color:white}
+.hdr-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--text-soft)}
+.hdr-btn:hover{background:var(--navy-light);color:var(--navy);border-color:var(--navy-light)}
+.hdr-btn .material-symbols-rounded{font-size:19px}
+
+/* ===== MAIN ===== */
+main{flex:1;display:flex;overflow:hidden}
+
+/* ===== LEFT PANEL ===== */
+.left-panel{flex:1;padding:20px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.welcome-block h2{font-size:1.65rem;font-weight:800;color:var(--navy);line-height:1.2}
+.welcome-block p{font-size:.92rem;color:var(--text-soft);font-family:var(--font-body);margin-top:3px}
+.service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.service-card{background:var(--surface);border-radius:var(--radius);padding:18px;border:1.5px solid var(--border);cursor:pointer;transition:all .22s;text-align:left;position:relative;overflow:hidden}
+.service-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--navy),var(--navy-mid));opacity:0;transition:opacity .22s}
+.service-card:hover{border-color:var(--navy-mid);transform:translateY(-3px);box-shadow:0 8px 24px rgba(26,69,200,.16)}
+.service-card:hover::before{opacity:1}
+.service-card:active{transform:translateY(-1px)}
+.service-card:hover .sc-icon{background:rgba(255,255,255,.15);color:white}
+.service-card:hover .sc-title{color:white}
+.service-card:hover .sc-sub{color:rgba(255,255,255,.65)}
+.sc-icon{width:48px;height:48px;border-radius:11px;background:var(--navy-light);color:var(--navy);display:flex;align-items:center;justify-content:center;margin-bottom:12px;transition:all .22s;position:relative;z-index:1}
+.sc-icon .material-symbols-rounded{font-size:24px}
+.sc-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:2px;position:relative;z-index:1;transition:color .22s}
+.sc-sub{font-size:.74rem;color:var(--text-soft);font-family:var(--font-body);position:relative;z-index:1;transition:color .22s}
+
+/* ===== AD STRIP ===== */
+.ad-strip{background:linear-gradient(135deg,#0D2B6E,#C8102E);border-radius:var(--radius);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;position:relative;overflow:hidden;min-height:76px}
+.ad-strip::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.06)}
+.ad-carousel{flex:1;position:relative;height:44px;overflow:hidden}
+.ad-slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s;pointer-events:none}
+.ad-slide.active{opacity:1;transform:translateY(0)}
+.ad-slide.leaving{opacity:0;transform:translateY(-10px)}
+.ad-slide small{color:rgba(255,255,255,.55);font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;font-family:var(--font-body)}
+.ad-slide h4{color:white;font-size:1rem;font-weight:700;margin-top:1px}
+.ad-dots{display:flex;gap:5px;margin-top:6px}
+.ad-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s,width .3s}
+.ad-dot.active{background:white;width:14px;border-radius:3px}
+.ad-cta{background:white;color:var(--red);border:none;border-radius:8px;padding:8px 18px;font-size:.82rem;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity .2s;position:relative;z-index:1}
+.ad-cta:hover{opacity:.9}
+
+/* ===== RIGHT: SHRUTI ===== */
+.right-panel{width:300px;flex-shrink:0;background:var(--shruti-bg);border-left:1px solid var(--border);display:flex;flex-direction:column}
+.shruti-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--surface)}
+.shruti-avatar-wrap{position:relative;margin-bottom:7px}
+.shruti-avatar{width:72px;height:72px;border-radius:50%;border:3px solid var(--navy-light);object-fit:cover;display:block}
+.shruti-avatar-fallback{width:72px;height:72px;border-radius:50%;border:3px solid var(--navy-light);background:linear-gradient(135deg,var(--navy),var(--navy-mid));display:flex;align-items:center;justify-content:center;color:white;font-size:26px}
+.status-dot{position:absolute;bottom:2px;right:2px;width:15px;height:15px;border-radius:50%;background:#16A34A;border:3px solid var(--surface)}
+.status-dot.speaking{background:var(--saffron);animation:pdot 1s ease-in-out infinite}
+@keyframes pdot{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.shruti-name{font-size:.95rem;font-weight:700;color:var(--navy)}
+.shruti-role{font-size:.68rem;color:var(--red);font-weight:600;font-family:var(--font-body);text-transform:uppercase;letter-spacing:.5px}
+.chat-area{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg-wrap{display:flex;flex-direction:column;max-width:90%}
+.msg-wrap.user{align-self:flex-end;align-items:flex-end}
+.msg-wrap.bot{align-self:flex-start;align-items:flex-start}
+.msg-meta{font-size:.62rem;color:var(--text-ghost);font-family:var(--font-body);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;padding:0 4px}
+.msg-bubble{padding:9px 13px;border-radius:13px;font-size:.82rem;font-family:var(--font-body);line-height:1.55}
+.msg-wrap.bot .msg-bubble{background:var(--surface);color:var(--text);border-radius:13px 13px 13px 3px;box-shadow:var(--shadow-card)}
+.msg-wrap.user .msg-bubble{background:var(--red);color:white;border-radius:13px 13px 3px 13px}
+.voice-area{padding:14px 16px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:10px}
+.waveform{display:flex;align-items:center;gap:3px;height:32px}
+.wv-bar{width:3px;background:var(--navy);border-radius:2px;transition:height .1s}
+.wv-bar.active{animation:wvanim .8s ease-in-out infinite}
+.wv-bar:nth-child(2){animation-delay:.1s}.wv-bar:nth-child(3){animation-delay:.2s}.wv-bar:nth-child(4){animation-delay:.3s}.wv-bar:nth-child(5){animation-delay:.1s}.wv-bar:nth-child(6){animation-delay:.25s}.wv-bar:nth-child(7){animation-delay:.15s}.wv-bar:nth-child(8){animation-delay:.3s}.wv-bar:nth-child(9){animation-delay:.05s}.wv-bar:nth-child(10){animation-delay:.2s}
+@keyframes wvanim{0%,100%{transform:scaleY(1)}50%{transform:scaleY(2.5)}}
+.chat-input-row{display:flex;gap:7px;width:100%}
+.chat-input{flex:1;padding:8px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:.8rem;font-family:var(--font-body);color:var(--text);outline:none;background:var(--bg);transition:border .2s}
+.chat-input:focus{border-color:var(--navy-mid);background:white}
+.send-btn{width:34px;height:34px;border-radius:9px;background:var(--navy);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.send-btn:hover{background:var(--navy-mid)}
+.send-btn .material-symbols-rounded{font-size:17px}
+.mic-btn{width:52px;height:52px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(200,16,46,.4);transition:all .2s}
+.mic-btn:hover{transform:scale(1.06)}
+.mic-btn.listening{background:var(--green);animation:mpulse 1.2s ease-in-out infinite}
+.mic-btn .material-symbols-rounded{font-size:24px}
+@keyframes mpulse{0%,100%{box-shadow:0 4px 14px rgba(22,163,74,.4)}50%{box-shadow:0 4px 28px rgba(22,163,74,.7)}}
+.mic-label{font-size:.65rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-body);font-weight:600}
+
+/* ===== FOOTER ===== */
+footer{background:var(--surface);border-top:1px solid var(--border);height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+footer span{font-size:.65rem;color:var(--text-ghost);font-family:var(--font-body);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+/* ===== MODAL BASE ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(13,43,110,.52);backdrop-filter:blur(7px);z-index:900;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-bg.show{opacity:1;pointer-events:all}
+.modal-box{background:white;border-radius:24px;overflow:hidden;box-shadow:var(--shadow-float);transform:scale(.94) translateY(8px);transition:transform .3s;max-height:92vh;overflow-y:auto}
+.modal-bg.show .modal-box{transform:scale(1) translateY(0)}
+
+/* ===== FLOW MODAL ===== */
+#flow-modal .modal-box{width:440px;max-width:92vw}
+.flow-header{padding:18px 22px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.flow-back{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--text-soft)}
+.flow-back:hover{background:var(--bg);color:var(--navy)}
+.flow-back .material-symbols-rounded{font-size:19px}
+.flow-icon{width:40px;height:40px;border-radius:10px;background:var(--navy-light);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flow-icon .material-symbols-rounded{font-size:22px}
+.flow-title-block{flex:1}
+.flow-title{font-size:1rem;font-weight:700;color:var(--navy)}
+.flow-subtitle{font-size:.74rem;color:var(--text-soft);font-family:var(--font-body);margin-top:1px}
+.flow-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft)}
+.flow-close:hover{background:var(--red-light);color:var(--red);border-color:var(--red-light)}
+.flow-close .material-symbols-rounded{font-size:16px}
+.flow-steps{display:flex;align-items:center;gap:0;padding:12px 22px;background:var(--bg);border-bottom:1px solid var(--border)}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;transition:all .3s;flex-shrink:0}
+.step-dot.done{background:var(--green);color:white}
+.step-dot.active{background:var(--navy);color:white;box-shadow:0 0 0 3px rgba(26,69,200,.2)}
+.step-dot.pending{background:var(--border);color:var(--text-ghost)}
+.step-line{flex:1;height:2px;background:var(--border);transition:background .3s}
+.step-line.done{background:var(--green)}
+.flow-body{padding:22px}
+
+/* ===== AMOUNT PICKER ===== */
+.quick-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.qa-btn{padding:12px 8px;border-radius:10px;border:1.5px solid var(--border);background:white;font-size:.9rem;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;color:var(--text)}
+.qa-btn:hover,.qa-btn.selected{background:var(--navy-light);border-color:var(--navy-mid);color:var(--navy)}
+.amount-label{font-size:.8rem;font-weight:600;color:var(--text-mid);font-family:var(--font-body);margin-bottom:7px}
+.amount-input-wrap{position:relative}
+.amount-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:1.1rem;font-weight:700;color:var(--text-soft)}
+.amount-input{width:100%;padding:12px 14px 12px 30px;border:1.5px solid var(--border);border-radius:10px;font-size:1.1rem;font-weight:700;font-family:var(--font);color:var(--text);outline:none;transition:border .2s}
+.amount-input:focus{border-color:var(--navy-mid)}
+.flow-note{font-size:.74rem;color:var(--text-soft);font-family:var(--font-body);background:var(--bg);border-radius:8px;padding:8px 12px;margin-top:12px}
+.flow-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:white;border:none;border-radius:10px;font-size:.92rem;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:14px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.flow-btn:hover{opacity:.9;transform:translateY(-1px)}
+.flow-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.flow-btn.danger{background:linear-gradient(135deg,#B91C1C,var(--red))}
+.flow-btn.green{background:linear-gradient(135deg,#15803D,var(--green))}
+
+/* ===== PIN PAD ===== */
+.pin-display{display:flex;gap:12px;justify-content:center;margin-bottom:22px}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:white;transition:all .2s}
+.pin-dot.filled{background:var(--navy);border-color:var(--navy);transform:scale(1.1)}
+.pin-dot.error{background:var(--red);border-color:var(--red);animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
+.pin-key{padding:14px;border-radius:12px;border:1.5px solid var(--border);background:white;font-size:1.2rem;font-weight:700;font-family:var(--font-body);cursor:pointer;text-align:center;transition:all .15s;color:var(--text)}
+.pin-key:hover{background:var(--navy-light);border-color:var(--navy-mid);color:var(--navy);transform:scale(1.04)}
+.pin-key:active{transform:scale(.96)}
+.pin-key.del{font-size:.85rem;color:var(--text-soft)}
+.pin-key.empty{border:none;background:transparent;cursor:default}
+.pin-key.empty:hover{transform:none;background:transparent}
+.pin-hint{text-align:center;font-size:.75rem;color:var(--text-ghost);font-family:var(--font-body);margin-bottom:16px}
+.pin-error-msg{text-align:center;color:var(--red);font-size:.78rem;font-family:var(--font-body);font-weight:600;margin-top:10px;min-height:18px}
+
+/* ===== OTP ===== */
+.otp-info{text-align:center;margin-bottom:20px}
+.otp-info p{font-size:.85rem;color:var(--text-mid);font-family:var(--font-body)}
+.otp-info strong{color:var(--navy)}
+.otp-boxes{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+.otp-box{width:54px;height:60px;border:2px solid var(--border);border-radius:12px;font-size:1.6rem;font-weight:700;font-family:var(--font-body);text-align:center;outline:none;transition:border .2s;color:var(--navy)}
+.otp-box:focus{border-color:var(--navy-mid);background:var(--navy-light)}
+.otp-box.filled{border-color:var(--navy);background:var(--navy-light)}
+.otp-resend{text-align:center;font-size:.78rem;color:var(--text-soft);font-family:var(--font-body)}
+.otp-resend span{color:var(--navy-mid);cursor:pointer;font-weight:600}
+
+/* ===== PROCESSING ===== */
+.processing-wrap{display:flex;flex-direction:column;align-items:center;padding:32px 22px;gap:16px}
+.processing-spin{width:64px;height:64px;border:4px solid var(--navy-light);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing-wrap h3{font-size:1.1rem;font-weight:700;color:var(--navy)}
+.processing-wrap p{font-size:.84rem;color:var(--text-soft);font-family:var(--font-body);text-align:center}
+
+/* ===== SUCCESS ===== */
+.success-header{background:linear-gradient(135deg,#15803D,#16A34A);padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.success-header.transfer{background:linear-gradient(135deg,var(--navy),var(--navy-mid))}
+.success-circle{width:60px;height:60px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.success-circle .material-symbols-rounded{font-size:36px;color:white}
+.success-header h3{color:white;font-size:1rem;font-weight:700}
+.success-amount{font-size:2.2rem;font-weight:800;color:white}
+.receipt-rows{padding:16px 20px}
+.receipt-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.receipt-row:last-of-type{border-bottom:none}
+.receipt-label{font-size:.79rem;color:var(--text-soft);font-family:var(--font-body)}
+.receipt-val{font-size:.85rem;font-weight:600;color:var(--text);font-family:var(--font-body)}
+.receipt-val.green{color:var(--green)}
+.receipt-val.navy{color:var(--navy)}
+.receipt-actions{padding:0 18px 18px;display:flex;gap:9px}
+.receipt-btn{flex:1;padding:11px;border-radius:11px;font-size:.87rem;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;border:none}
+.receipt-btn.primary{background:var(--navy);color:white}
+.receipt-btn.primary:hover{background:var(--navy-mid)}
+.receipt-btn.secondary{background:var(--bg);color:var(--text-mid);border:1px solid var(--border)}
+.receipt-btn.secondary:hover{background:var(--navy-light)}
+
+/* ===== BALANCE CARD MODAL ===== */
+#balance-modal .modal-box{width:430px;max-width:92vw}
+.bal-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));padding:18px 22px;display:flex;align-items:center;justify-content:space-between}
+.bal-header h3{color:white;font-size:.95rem;font-weight:700}
+.bal-close{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.15);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bal-close .material-symbols-rounded{font-size:17px}
+.bank-card{margin:18px;border-radius:16px;background:linear-gradient(135deg,#0D2B6E,#1A45C8 55%,#C8102E);padding:20px 22px;color:white;position:relative;overflow:hidden}
+.bank-card::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.07)}
+.bank-card::after{content:'';position:absolute;bottom:-55px;left:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.05)}
+.card-bank-name{font-size:.68rem;font-weight:700;letter-spacing:.8px;opacity:.75;margin-bottom:10px;position:relative;z-index:1}
+.card-chip{width:30px;height:22px;background:linear-gradient(135deg,#D4AF37,#F5D060);border-radius:4px;margin-bottom:12px;position:relative;z-index:1}
+.card-number{font-size:.95rem;font-family:monospace;letter-spacing:2px;opacity:.85;margin-bottom:14px;position:relative;z-index:1}
+.card-bal-label{font-size:.67rem;opacity:.65;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;position:relative;z-index:1}
+.card-bal-amount{font-size:1.7rem;font-weight:800;position:relative;z-index:1}
+.card-footer-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;position:relative;z-index:1}
+.card-holder-name{font-size:.78rem;font-weight:700;letter-spacing:.5px}
+.card-type{font-size:.68rem;opacity:.65}
+.bal-accounts{padding:0 18px 18px;display:flex;flex-direction:column;gap:9px}
+.acc-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--bg);border-radius:11px}
+.acc-info .acc-label{font-size:.7rem;color:var(--text-soft);font-family:var(--font-body)}
+.acc-info .acc-num{font-size:.83rem;font-weight:700;color:var(--text)}
+.acc-amount{font-size:.98rem;font-weight:700;color:var(--navy)}
+
+/* ===== CARD SERVICES MODAL ===== */
+.card-options{display:flex;flex-direction:column;gap:10px}
+.card-option-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;background:white;cursor:pointer;transition:all .2s;text-align:left}
+.card-option-btn:hover{border-color:var(--navy-mid);background:var(--navy-light);transform:translateX(4px)}
+.co-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.co-icon .material-symbols-rounded{font-size:22px}
+.co-title{font-size:.9rem;font-weight:700;color:var(--text)}
+.co-sub{font-size:.74rem;color:var(--text-soft);font-family:var(--font-body)}
+
+/* ===== AGENT MODAL ===== */
+.agent-connecting{display:flex;flex-direction:column;align-items:center;padding:28px 22px;gap:14px;text-align:center}
+.agent-video-frame{width:100%;height:180px;background:linear-gradient(135deg,#0D2B6E 0%,#1A3A8F 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.agent-video-frame::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(26,69,200,.3),transparent)}
+.agent-pulse{width:56px;height:56px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;animation:apulse 1.5s ease-in-out infinite}
+.agent-pulse .material-symbols-rounded{font-size:28px;color:var(--navy)}
+@keyframes apulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.4)}70%{box-shadow:0 0 0 20px rgba(255,255,255,0)}}
+.agent-connecting h3{font-size:1rem;font-weight:700;color:var(--navy)}
+.agent-connecting p{font-size:.83rem;color:var(--text-soft);font-family:var(--font-body)}
+.agent-status{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--green);font-family:var(--font-body);font-weight:600}
+.agent-status::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--green);animation:pdot 1s ease-in-out infinite}
+.queue-info{background:var(--bg);border-radius:10px;padding:12px 16px;width:100%;display:flex;align-items:center;justify-content:space-between}
+.queue-info .qi-label{font-size:.74rem;color:var(--text-soft);font-family:var(--font-body)}
+.queue-info .qi-val{font-size:.88rem;font-weight:700;color:var(--navy)}
+
+/* ===== TRANSFER FORM ===== */
+.tf-field{margin-bottom:14px}
+.tf-field label{display:block;font-size:.78rem;font-weight:600;color:var(--text-mid);margin-bottom:5px;font-family:var(--font-body)}
+.tf-field input,.tf-field select{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:var(--font-body);color:var(--text);outline:none;transition:border .2s;background:white}
+.tf-field input:focus,.tf-field select:focus{border-color:var(--navy-mid)}
+.tf-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.tf-chip{padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--border);font-size:.76rem;font-weight:600;font-family:var(--font-body);cursor:pointer;background:white;color:var(--text-mid);transition:all .2s}
+.tf-chip:hover,.tf-chip.selected{background:var(--navy-light);border-color:var(--navy-mid);color:var(--navy)}
+
+/* ===== ACCOUNT OPENING ===== */
+.acc-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.acc-type-card{padding:14px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;text-align:center}
+.acc-type-card:hover,.acc-type-card.selected{border-color:var(--navy-mid);background:var(--navy-light)}
+.acc-type-card .material-symbols-rounded{font-size:28px;color:var(--navy);margin-bottom:6px}
+.acc-type-card h4{font-size:.88rem;font-weight:700;color:var(--navy)}
+.acc-type-card p{font-size:.72rem;color:var(--text-soft);font-family:var(--font-body);margin-top:2px}
+
+/* ===== THINKING ===== */
+.thinking-dots{display:flex;gap:5px;padding:4px 2px}
+.thinking-dots span{width:7px;height:7px;border-radius:50%;background:var(--text-ghost);animation:dotb .9s ease-in-out infinite}
+.thinking-dots span:nth-child(2){animation-delay:.15s}
+.thinking-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dotb{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-6px);opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP OVERLAY ===== -->
+<div id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-brand">
+      <div class="setup-brand-icon"><span class="material-symbols-rounded">account_balance</span></div>
+      <div><h1>SevaSetu</h1><span>AI Banking Kiosk</span></div>
+    </div>
+    <h2>Configure API Keys</h2>
+    <p>Enter your credentials to activate Shruti, your AI banking assistant.</p>
+    <div class="setup-field">
+      <label>Groq API Key</label>
+      <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off">
+      <div class="setup-note">Powers Shruti's intelligence (LLM)</div>
+    </div>
+    <div class="setup-field">
+      <label>Sarvam AI Key</label>
+      <input type="password" id="sarvam-key-input" placeholder="Your Sarvam subscription key" autocomplete="off">
+      <div class="setup-note">Powers Shruti's Hindi/English voice. Falls back to browser TTS if blank.</div>
+    </div>
+    <button class="btn-start" onclick="saveKeysAndStart()">Activate Shruti →</button>
+    <div class="setup-skip">No keys? <a onclick="skipSetup()">Skip (Demo Mode)</a></div>
+  </div>
+</div>
+
+<!-- ===== SCREENSAVER ===== -->
+<div id="screensaver" onclick="dismissScreensaver()">
+  <div class="ss-orb ss-orb-1"></div>
+  <div class="ss-orb ss-orb-2"></div>
+  <div class="ss-time" id="ss-time">00:00</div>
+  <div class="ss-date" id="ss-date">Monday, 16 March 2026</div>
+  <!-- ad image if ad.png exists -->
+  <img src="ad.png" class="ss-ad-img" id="ss-ad-img" alt="" onerror="this.style.display='none'">
+  <div class="ss-logo" id="ss-logo-block">
+    <div class="ss-logo-icon"><span class="material-symbols-rounded">account_balance</span></div>
+    <div class="ss-bank-name">Union Bank of India</div>
+    <div class="ss-tagline">"Good People to Grow With"</div>
+  </div>
+  <div class="ss-touch">Touch anywhere to continue</div>
+</div>
+
+<!-- ===== FLOW MODAL ===== -->
+<div class="modal-bg" id="flow-modal">
+  <div class="modal-box" id="flow-box">
+    <!-- content injected by JS -->
+  </div>
+</div>
+
+<!-- ===== BALANCE MODAL ===== -->
+<div class="modal-bg" id="balance-modal" onclick="closeModal('balance-modal',event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="bal-header">
+      <h3 id="bal-modal-title">Account Balance</h3>
+      <button class="bal-close" onclick="closeModal('balance-modal')"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="bank-card">
+      <div class="card-bank-name">UNION BANK OF INDIA / SevaSetu</div>
+      <div class="card-chip"></div>
+      <div class="card-number">████ ████ ████ 4821</div>
+      <div class="card-bal-label">Available Balance</div>
+      <div class="card-bal-amount" id="bal-primary">₹45,230.50</div>
+      <div class="card-footer-row">
+        <div class="card-holder-name">AMIT KUMAR</div>
+        <div class="card-type">Savings Account</div>
+      </div>
+    </div>
+    <div class="bal-accounts">
+      <div class="acc-row">
+        <div class="acc-info"><div class="acc-label">Savings Account</div><div class="acc-num">SB ••••4821</div></div>
+        <div class="acc-amount" id="bal-savings">₹45,230.50</div>
+      </div>
+      <div class="acc-row">
+        <div class="acc-info"><div class="acc-label">Fixed Deposit (Maturity: Mar 2026)</div><div class="acc-num">FD ••••7634</div></div>
+        <div class="acc-amount">₹1,20,000.00</div>
+      </div>
+      <div class="acc-row">
+        <div class="acc-info"><div class="acc-label">Recurring Deposit</div><div class="acc-num">RD ••••2290</div></div>
+        <div class="acc-amount">₹18,500.00</div>
+      </div>
+    </div>
+    <div style="padding:0 18px 18px">
+      <button class="flow-btn" onclick="closeModal('balance-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="modal-bg" id="settings-modal" onclick="closeModal('settings-modal',event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="width:420px;max-width:92vw;padding:28px">
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px">⚙️ API Settings</h3>
+    <p style="font-size:.8rem;color:var(--text-soft);font-family:var(--font-body);margin-bottom:20px">Update keys for Shruti's AI and voice features.</p>
+    <div class="setup-field"><label>Groq API Key</label><input type="password" id="groq-key-settings" placeholder="gsk_..." autocomplete="off"></div>
+    <div class="setup-field"><label>Sarvam AI Key</label><input type="password" id="sarvam-key-settings" placeholder="Sarvam subscription key" autocomplete="off"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="receipt-btn secondary" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="receipt-btn primary" onclick="saveSettings()">Save Keys</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="header-left">
+    <div class="brand-mark">
+      <div class="brand-icon"><span class="material-symbols-rounded">account_balance</span></div>
+      <div><div class="brand-name">SevaSetu</div><div class="brand-sub">AI Banking Kiosk</div></div>
+    </div>
+    <div class="header-divider"></div>
+    <div class="kiosk-badge">KIOSK MODE</div>
+  </div>
+  <div class="header-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-hi" onclick="setLang('hi')">हि</button>
+    </div>
+    <button class="hdr-btn" onclick="openModal('settings-modal')"><span class="material-symbols-rounded">settings</span></button>
+    <button class="hdr-btn"><span class="material-symbols-rounded">accessibility_new</span></button>
+    <button class="hdr-btn"><span class="material-symbols-rounded">help</span></button>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main>
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="welcome-block">
+      <h2 id="welcome-text">Welcome back, Amit 👋</h2>
+      <p id="select-text">Select a service to get started</p>
+    </div>
+    <div class="service-grid">
+      <div class="service-card" onclick="openFlow('balance')">
+        <div class="sc-icon"><span class="material-symbols-rounded">account_balance_wallet</span></div>
+        <div class="sc-title">Check Balance</div>
+        <div class="sc-sub">View all your accounts</div>
+      </div>
+      <div class="service-card" onclick="openFlow('withdraw')">
+        <div class="sc-icon"><span class="material-symbols-rounded">atm</span></div>
+        <div class="sc-title">Withdraw Cash</div>
+        <div class="sc-sub">Quick cardless withdrawal</div>
+      </div>
+      <div class="service-card" onclick="openFlow('transfer')">
+        <div class="sc-icon"><span class="material-symbols-rounded">payments</span></div>
+        <div class="sc-title">Transfer Money</div>
+        <div class="sc-sub">UPI / NEFT / IMPS</div>
+      </div>
+      <div class="service-card" onclick="openFlow('account')">
+        <div class="sc-icon"><span class="material-symbols-rounded">person_add</span></div>
+        <div class="sc-title">Open Account</div>
+        <div class="sc-sub">Savings or credit card</div>
+      </div>
+      <div class="service-card" onclick="openFlow('card')">
+        <div class="sc-icon"><span class="material-symbols-rounded">credit_card</span></div>
+        <div class="sc-title">Card Services</div>
+        <div class="sc-sub">Block, replace, or set limits</div>
+      </div>
+      <div class="service-card" onclick="openFlow('agent')">
+        <div class="sc-icon"><span class="material-symbols-rounded">support_agent</span></div>
+        <div class="sc-title">Talk to Agent</div>
+        <div class="sc-sub">Video call a specialist</div>
+      </div>
+    </div>
+
+    <!-- AD STRIP -->
+    <div class="ad-strip">
+      <div class="ad-carousel" id="ad-carousel">
+        <!-- slides injected by JS -->
+      </div>
+      <button class="ad-cta" id="ad-cta-btn">Learn More</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: SHRUTI -->
+  <div class="right-panel">
+    <div class="shruti-header">
+      <div class="shruti-avatar-wrap">
+        <img src="ai.png" class="shruti-avatar" id="shruti-img" alt="Shruti" onerror="this.style.display='none';document.getElementById('shruti-fb').style.display='flex'">
+        <div class="shruti-avatar-fallback" id="shruti-fb" style="display:none"><span class="material-symbols-rounded">smart_toy</span></div>
+        <div class="status-dot" id="status-dot"></div>
+      </div>
+      <div class="shruti-name">Shruti</div>
+      <div class="shruti-role">Digital Sahayak</div>
+    </div>
+    <div class="chat-area" id="chat-area"></div>
+    <div class="voice-area">
+      <div class="waveform" id="waveform">
+        <div class="wv-bar" style="height:7px"></div><div class="wv-bar" style="height:17px"></div><div class="wv-bar" style="height:27px"></div>
+        <div class="wv-bar" style="height:13px"></div><div class="wv-bar" style="height:21px"></div><div class="wv-bar" style="height:7px"></div>
+        <div class="wv-bar" style="height:19px"></div><div class="wv-bar" style="height:25px"></div><div class="wv-bar" style="height:11px"></div>
+        <div class="wv-bar" style="height:15px"></div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="send-btn" onclick="sendMsg()"><span class="material-symbols-rounded">send</span></button>
+      </div>
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">
+        <span class="material-symbols-rounded" id="mic-icon">mic</span>
+      </button>
+      <div class="mic-label" id="mic-label">Tap to Speak</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>Device ID: SSK-1042-BPL</span>
+  <span>© 2024 SevaSetu — Union Bank of India</span>
+  <span>Branch: MP Nagar, Bhopal</span>
+</footer>
+
+<script>
+// =====================================================
+//  STATE
+// =====================================================
+const S = {
+  groqKey:'', sarvamKey:'', lang:'en',
+  history:[], isSpeaking:false, isThinking:false, isListening:false,
+  balance:45230.50,
+  flow:null, flowStep:0, flowData:{},
+  lastActivity: Date.now(),
+  screensaverActive: false,
+};
+const CORRECT_PIN = '1234', CORRECT_OTP = '1234';
+
+// =====================================================
+//  AD STRIP DATA
+// =====================================================
+const ADS = [
+  { badge:'Featured Offer', title:'4.5% APY on Savings', sub:'Limited time for new accounts', cta:'Open Account', action:'account' },
+  { badge:'Zero Fee Transfer', title:'UPI & NEFT — Free Forever', sub:'Send money anywhere, no charges', cta:'Transfer Now', action:'transfer' },
+  { badge:'New! RuPay Platinum', title:'2% Cashback on All Spends', sub:'Apply today with zero joining fee', cta:'Apply Now', action:'account' },
+  { badge:'KYC Update', title:'Update Your KYC in 2 Minutes', sub:'Avoid service interruptions', cta:'Update KYC', action:'agent' },
+  { badge:'FD Special', title:'7.25% on 1-Year Fixed Deposit', sub:'Senior citizens get extra 0.5%', cta:'Book FD', action:'account' },
+];
+let adIdx = 0, adTimer;
+function initAdStrip() {
+  const c = document.getElementById('ad-carousel');
+  c.innerHTML = ADS.map((a,i)=>`
+    <div class="ad-slide${i===0?' active':''}" data-idx="${i}">
+      <small>${a.badge}</small>
+      <h4>${a.title}</h4>
+      <p style="color:rgba(255,255,255,.65);font-size:.74rem;font-family:var(--font-body)">${a.sub}</p>
+      <div class="ad-dots">${ADS.map((_,j)=>`<div class="ad-dot${j===0?' active':''}"></div>`).join('')}</div>
+    </div>`).join('');
+  updateAdCta();
+  adTimer = setInterval(nextAd, 4000);
+}
+function nextAd() {
+  const slides = document.querySelectorAll('.ad-slide');
+  slides[adIdx].classList.remove('active');
+  slides[adIdx].classList.add('leaving');
+  setTimeout(()=>slides[adIdx].classList.remove('leaving'),600);
+  adIdx = (adIdx+1) % ADS.length;
+  slides[adIdx].classList.add('active');
+  document.querySelectorAll('.ad-dot').forEach((d,i)=>{
+    d.classList.toggle('active', Math.floor(i/ADS.length)===0 && (i%ADS.length)===adIdx);
+  });
+  // Update all dot sets
+  document.querySelectorAll('.ad-slide').forEach((sl,si)=>{
+    sl.querySelectorAll('.ad-dot').forEach((d,di)=>d.classList.toggle('active',di===adIdx));
+  });
+  updateAdCta();
+}
+function updateAdCta(){
+  document.getElementById('ad-cta-btn').textContent = ADS[adIdx].cta;
+  document.getElementById('ad-cta-btn').onclick = ()=> openFlow(ADS[adIdx].action);
+}
+
+// =====================================================
+//  SCREENSAVER
+// =====================================================
+function initScreensaver() {
+  updateSsClock();
+  setInterval(updateSsClock, 1000);
+  setInterval(checkInactivity, 5000);
+  ['mousemove','mousedown','keydown','touchstart','click'].forEach(e=>
+    document.addEventListener(e, resetActivity, true));
+}
+function updateSsClock() {
+  const now = new Date();
+  document.getElementById('ss-time').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('ss-date').textContent = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function checkInactivity() {
+  if (!S.screensaverActive && Date.now()-S.lastActivity > 60000) showScreensaver();
+}
+function resetActivity() {
+  S.lastActivity = Date.now();
+  if (S.screensaverActive) dismissScreensaver();
+}
+function showScreensaver() {
+  S.screensaverActive = true;
+  document.getElementById('screensaver').classList.add('active');
+}
+function dismissScreensaver() {
+  S.screensaverActive = false;
+  document.getElementById('screensaver').classList.remove('active');
+  S.lastActivity = Date.now();
+}
+
+// =====================================================
+//  MODAL UTILS
+// =====================================================
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id, e) {
+  if (e && e.target!==document.getElementById(id)) return;
+  document.getElementById(id).classList.remove('show');
+}
+function openFlowModal(html) {
+  document.getElementById('flow-box').innerHTML = html;
+  document.getElementById('flow-modal').classList.add('show');
+}
+function closeFlow() {
+  document.getElementById('flow-modal').classList.remove('show');
+  setTimeout(()=>{ S.flow=null; S.flowStep=0; S.flowData={}; }, 300);
+}
+
+// =====================================================
+//  SETUP
+// =====================================================
+function saveKeysAndStart() {
+  const g = document.getElementById('groq-key-input').value.trim();
+  const sv = document.getElementById('sarvam-key-input').value.trim();
+  if (!g) { alert('Please enter your Groq API key.'); return; }
+  S.groqKey=g; S.sarvamKey=sv;
+  localStorage.setItem('ss_groq',g); localStorage.setItem('ss_sarvam',sv);
+  startApp();
+}
+function skipSetup() { startApp(); }
+function startApp() {
+  document.getElementById('setup-overlay').classList.add('hidden');
+  initAdStrip(); initScreensaver(); updateUI();
+  greeting();
+}
+function openSettings() {
+  document.getElementById('groq-key-settings').value=S.groqKey;
+  document.getElementById('sarvam-key-settings').value=S.sarvamKey;
+  openModal('settings-modal');
+}
+function saveSettings() {
+  S.groqKey=document.getElementById('groq-key-settings').value.trim();
+  S.sarvamKey=document.getElementById('sarvam-key-settings').value.trim();
+  localStorage.setItem('ss_groq',S.groqKey); localStorage.setItem('ss_sarvam',S.sarvamKey);
+  closeModal('settings-modal');
+}
+
+// =====================================================
+//  LANGUAGE
+// =====================================================
+const UI_TEXT = {
+  en:{ welcome:'Welcome back, Amit 👋', select:'Select a service to get started', tapSpeak:'Tap to Speak', typeMsg:'Type a message…' },
+  hi:{ welcome:'वापस स्वागत है, Amit 👋', select:'शुरू करने के लिए एक सेवा चुनें', tapSpeak:'बोलने के लिए टैप करें', typeMsg:'संदेश लिखें…' }
+};
+function setLang(l) {
+  S.lang=l;
+  document.getElementById('btn-en').classList.toggle('active',l==='en');
+  document.getElementById('btn-hi').classList.toggle('active',l==='hi');
+  updateUI();
+}
+function updateUI() {
+  const t=UI_TEXT[S.lang];
+  document.getElementById('welcome-text').textContent=t.welcome;
+  document.getElementById('select-text').textContent=t.select;
+  document.getElementById('mic-label').textContent=t.tapSpeak;
+  document.getElementById('chat-input').placeholder=t.typeMsg;
+}
+
+// =====================================================
+//  CHAT
+// =====================================================
+function greeting() {
+  const g = S.lang==='hi'
+    ? 'नमस्ते Amit! मैं Shruti हूँ, आपकी Digital Sahayak। आज किस सेवा में मदद करूँ? 🙏'
+    : "Hello Amit! I'm Shruti, your Digital Sahayak. How can I help you today? 🙏";
+  appendBot(g); S.history.push({role:'assistant',content:g}); speak(g);
+}
+function appendBot(txt) {
+  const area=document.getElementById('chat-area');
+  const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const w=document.createElement('div'); w.className='msg-wrap bot';
+  w.innerHTML=`<div class="msg-meta">Shruti • ${now}</div><div class="msg-bubble">${txt}</div>`;
+  area.appendChild(w); area.scrollTop=9999; return w;
+}
+function appendUser(txt) {
+  const area=document.getElementById('chat-area');
+  const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const w=document.createElement('div'); w.className='msg-wrap user';
+  w.innerHTML=`<div class="msg-meta">You • ${now}</div><div class="msg-bubble">${txt}</div>`;
+  area.appendChild(w); area.scrollTop=9999;
+}
+function showThinking() {
+  const area=document.getElementById('chat-area');
+  const w=document.createElement('div'); w.className='msg-wrap bot'; w.id='thinking';
+  w.innerHTML=`<div class="msg-meta">Shruti</div><div class="msg-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div></div>`;
+  area.appendChild(w); area.scrollTop=9999;
+}
+function removeThinking(){ document.getElementById('thinking')?.remove(); }
+function setSpeaking(v){ S.isSpeaking=v; document.getElementById('status-dot').classList.toggle('speaking',v); document.querySelectorAll('.wv-bar').forEach(b=>b.classList.toggle('active',v)); }
+
+async function sendMsg() {
+  const inp=document.getElementById('chat-input'); const txt=inp.value.trim(); if(!txt||S.isThinking) return;
+  inp.value=''; appendUser(txt); S.history.push({role:'user',content:txt});
+  if(!S.groqKey){ demoAIReply(txt); return; }
+  await callGroq(txt);
+}
+
+const SYSTEM_PROMPT=(lang)=>`You are Shruti, a warm and professional AI banking assistant for SevaSetu kiosk by Union Bank of India.
+Language: ${lang==='hi'?'Respond in conversational Hindi (mix common English banking terms naturally)':'Respond in friendly, concise English'}.
+Customer: Amit Kumar | SB ••••4821 Balance: ₹${S.balance.toFixed(2)} | FD ••••7634: ₹1,20,000
+Keep responses SHORT (2-3 sentences). Be warm. Use ₹ for rupees.
+You can guide users but actual transactions happen through the UI flows.`;
+
+async function callGroq(txt) {
+  S.isThinking=true; showThinking();
+  try {
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST', headers:{'Authorization':`Bearer ${S.groqKey}`,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'openai/gpt-oss-120b',messages:[{role:'system',content:SYSTEM_PROMPT(S.lang)},...S.history],stream:true,max_completion_tokens:400,temperature:.8,reasoning_effort:'medium'})
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    removeThinking(); const w=appendBot(''); const b=w.querySelector('.msg-bubble');
+    const reader=r.body.getReader(); const dec=new TextDecoder(); let full='';
+    while(true){ const{done,value}=await reader.read(); if(done)break;
+      for(const line of dec.decode(value,{stream:true}).split('\n')){
+        const l=line.trim(); if(!l.startsWith('data: ')||l==='data: [DONE]') continue;
+        try{ const d=JSON.parse(l.slice(6)); const tok=d.choices?.[0]?.delta?.content||''; full+=tok; b.textContent=full; document.getElementById('chat-area').scrollTop=9999; }catch(_){}
+      }
+    }
+    S.history.push({role:'assistant',content:full}); speak(full);
+  } catch(e) { removeThinking(); const m=`Sorry, couldn't connect. (${e.message})`; appendBot(m); speak(m); }
+  S.isThinking=false;
+}
+
+function demoAIReply(txt) {
+  S.isThinking=true; showThinking();
+  setTimeout(()=>{
+    const lo=txt.toLowerCase(); let r;
+    if(/balance|बैलेंस/.test(lo)) r=S.lang==='hi'?`Amit ji, आपके बचत खाते में ₹${fmtInr(S.balance)} हैं।`:`Amit, your savings account has ₹${fmtInr(S.balance)}.`;
+    else if(/withdraw|निकास/.test(lo)) r=S.lang==='hi'?'ज़रूर! Withdraw Cash बटन से राशि चुनें।':'Sure! Use the Withdraw Cash option to proceed.';
+    else if(/transfer|ट्रांसफर/.test(lo)) r=S.lang==='hi'?'Transfer Money से UPI या NEFT भेज सकते हैं।':'Use Transfer Money to send via UPI or NEFT.';
+    else r=S.lang==='hi'?'मैं यहाँ आपकी सहायता के लिए हूँ।':"I'm here to help! Select a service or just ask me anything.";
+    S.history.push({role:'assistant',content:r}); removeThinking(); appendBot(r); speak(r); S.isThinking=false;
+  },1200);
+}
+
+// =====================================================
+//  FLOW ROUTER
+// =====================================================
+function openFlow(type) {
+  S.flow=type; S.flowStep=0; S.flowData={};
+  const chatMsg = {
+    balance: S.lang==='hi'?'मुझे बैलेंस देखना है।':'I want to check my balance.',
+    withdraw: S.lang==='hi'?'मुझे नकद निकालनी है।':'I want to withdraw cash.',
+    transfer: S.lang==='hi'?'मुझे पैसे ट्रांसफर करने हैं।':'I want to transfer money.',
+    account: S.lang==='hi'?'मुझे नया खाता खोलना है।':'I want to open a new account.',
+    card: S.lang==='hi'?'मुझे कार्ड सेवा चाहिए।':'I need help with my card.',
+    agent: S.lang==='hi'?'मुझे एजेंट से बात करनी है।':'Connect me to a banking agent.'
+  }[type];
+  if(chatMsg){ appendUser(chatMsg); S.history.push({role:'user',content:chatMsg}); }
+
+  if(type==='balance') { renderBalanceFlow(); return; }
+  if(type==='withdraw') { renderWithdrawStep0(); return; }
+  if(type==='transfer') { renderTransferStep0(); return; }
+  if(type==='account') { renderAccountStep0(); return; }
+  if(type==='card') { renderCardStep0(); return; }
+  if(type==='agent') { renderAgentFlow(); return; }
+}
+
+// =====================================================
+//  FLOW: BALANCE (direct show)
+// =====================================================
+function renderBalanceFlow() {
+  const b=S.balance; const fmt=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('bal-primary').textContent=fmt(b);
+  document.getElementById('bal-savings').textContent=fmt(b);
+  document.getElementById('bal-modal-title').textContent=S.lang==='hi'?'खाता बैलेंस':'Account Balance';
+  openModal('balance-modal');
+  const r=S.lang==='hi'?`Amit ji, आपके बचत खाते में ${fmt(b)} उपलब्ध हैं।`:`Amit, your savings account balance is ${fmt(b)}.`;
+  setTimeout(()=>{ appendBot(r); speak(r); },300);
+}
+
+// =====================================================
+//  FLOW: WITHDRAW — Step 0: Amount
+// =====================================================
+function renderWithdrawStep0() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:var(--navy-light)"><span class="material-symbols-rounded">atm</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'नकद निकासी':'Cash Withdrawal'}</div>
+        <div class="flow-subtitle">${hi?'राशि चुनें':'Select an amount'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-steps">
+      <div class="step-dot active">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot pending">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot pending">3</div>
+      <div class="step-line"></div>
+      <div class="step-dot pending">✓</div>
+    </div>
+    <div class="flow-body">
+      <div class="amount-label">${hi?'त्वरित राशि':'Quick amounts'}</div>
+      <div class="quick-amounts">
+        ${[500,1000,2000,5000,10000,20000].map(a=>`<button class="qa-btn" onclick="selectQA(this,${a})">₹${a.toLocaleString('en-IN')}</button>`).join('')}
+      </div>
+      <div class="amount-label">${hi?'या कस्टम राशि दर्ज करें':'Or enter custom amount'}</div>
+      <div class="amount-input-wrap">
+        <span class="amount-prefix">₹</span>
+        <input class="amount-input" id="w-amount" type="number" min="100" max="20000" step="100" placeholder="Enter amount" oninput="S.flowData.amount=+this.value">
+      </div>
+      <div class="flow-note">Max withdrawal: ₹20,000 per transaction. Multiples of ₹100 only.</div>
+      <button class="flow-btn" onclick="validateWithdrawAmount()">
+        <span class="material-symbols-rounded">arrow_forward</span>${hi?'आगे बढ़ें':'Continue'}
+      </button>
+    </div>`);
+  const msg=hi?'कितनी राशि निकालनी है? नीचे राशि चुनें या टाइप करें।':'How much would you like to withdraw? Pick a quick amount or enter custom.';
+  setTimeout(()=>{appendBot(msg);speak(msg);},300);
+}
+function selectQA(btn,amt) {
+  document.querySelectorAll('.qa-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('w-amount').value=amt;
+  S.flowData.amount=amt;
+}
+function validateWithdrawAmount() {
+  const amt=S.flowData.amount||+document.getElementById('w-amount').value;
+  if(!amt||amt<100){alert(S.lang==='hi'?'कृपया ₹100 से अधिक राशि दर्ज करें।':'Please enter a valid amount (min ₹100).'); return;}
+  if(amt>20000){alert(S.lang==='hi'?'अधिकतम निकासी ₹20,000 है।':'Maximum withdrawal is ₹20,000.'); return;}
+  if(amt>S.balance){alert(S.lang==='hi'?'अपर्याप्त बैलेंस।':'Insufficient balance.'); return;}
+  S.flowData.amount=amt;
+  renderPinStep('withdraw');
+}
+
+// =====================================================
+//  FLOW: TRANSFER — Step 0: Recipient + Amount
+// =====================================================
+function renderTransferStep0() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#EEF2FF"><span class="material-symbols-rounded">payments</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'पैसे ट्रांसफर करें':'Transfer Money'}</div>
+        <div class="flow-subtitle">${hi?'प्राप्तकर्ता और राशि दर्ज करें':'Enter recipient & amount'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-steps">
+      <div class="step-dot active">1</div><div class="step-line"></div>
+      <div class="step-dot pending">2</div><div class="step-line"></div>
+      <div class="step-dot pending">3</div><div class="step-line"></div>
+      <div class="step-dot pending">✓</div>
+    </div>
+    <div class="flow-body">
+      <div class="tf-field">
+        <label>${hi?'ट्रांसफर का तरीका':'Transfer Method'}</label>
+        <div class="tf-chips">
+          <div class="tf-chip selected" onclick="selectChip(this,'method','UPI')">UPI</div>
+          <div class="tf-chip" onclick="selectChip(this,'method','NEFT')">NEFT</div>
+          <div class="tf-chip" onclick="selectChip(this,'method','IMPS')">IMPS</div>
+        </div>
+      </div>
+      <div class="tf-field">
+        <label>${hi?'UPI ID / खाता नंबर':'UPI ID / Account Number'}</label>
+        <input type="text" id="t-recipient" placeholder="e.g. rahul@upi or 9XXXXXXXXX" oninput="S.flowData.recipient=this.value">
+      </div>
+      <div class="tf-field">
+        <label>${hi?'राशि':'Amount'}</label>
+        <div class="amount-input-wrap">
+          <span class="amount-prefix">₹</span>
+          <input class="amount-input" id="t-amount" type="number" min="1" placeholder="Enter amount" oninput="S.flowData.transferAmt=+this.value">
+        </div>
+      </div>
+      <div class="tf-field">
+        <label>${hi?'टिप्पणी (वैकल्पिक)':'Remarks (Optional)'}</label>
+        <input type="text" id="t-remarks" placeholder="What's this for?" oninput="S.flowData.remarks=this.value">
+      </div>
+      <button class="flow-btn" onclick="validateTransfer()">
+        <span class="material-symbols-rounded">arrow_forward</span>${hi?'जारी रखें':'Continue'}
+      </button>
+    </div>`);
+  S.flowData.method='UPI';
+  const m=hi?'किसे पैसे भेजने हैं और कितना? नीचे भरें।':'Who would you like to send money to, and how much?';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+function selectChip(el, key, val) {
+  el.closest('.tf-chips').querySelectorAll('.tf-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); S.flowData[key]=val;
+}
+function validateTransfer() {
+  const rec=S.flowData.recipient||document.getElementById('t-recipient').value.trim();
+  const amt=S.flowData.transferAmt||+document.getElementById('t-amount').value;
+  if(!rec){alert('Please enter recipient UPI ID or account number.'); return;}
+  if(!amt||amt<1){alert('Please enter a valid amount.'); return;}
+  if(amt>S.balance){alert('Insufficient balance.'); return;}
+  S.flowData.recipient=rec; S.flowData.transferAmt=amt;
+  renderPinStep('transfer');
+}
+
+// =====================================================
+//  FLOW: ACCOUNT — Step 0: Account type
+// =====================================================
+function renderAccountStep0() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#F0FDF4"><span class="material-symbols-rounded" style="color:var(--green)">person_add</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'नया खाता खोलें':'Open New Account'}</div>
+        <div class="flow-subtitle">${hi?'खाता प्रकार चुनें':'Choose account type'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-body">
+      <div class="acc-type-grid">
+        <div class="acc-type-card selected" onclick="selectAccType(this,'savings')">
+          <span class="material-symbols-rounded">savings</span>
+          <h4>${hi?'बचत खाता':'Savings Account'}</h4>
+          <p>${hi?'4.5% ब्याज दर':'4.5% interest p.a.'}</p>
+        </div>
+        <div class="acc-type-card" onclick="selectAccType(this,'current')">
+          <span class="material-symbols-rounded">business_center</span>
+          <h4>${hi?'चालू खाता':'Current Account'}</h4>
+          <p>${hi?'व्यापार के लिए':'For businesses'}</p>
+        </div>
+        <div class="acc-type-card" onclick="selectAccType(this,'fd')">
+          <span class="material-symbols-rounded">lock_clock</span>
+          <h4>${hi?'सावधि जमा':'Fixed Deposit'}</h4>
+          <p>${hi?'7.25% ब्याज':'7.25% p.a.'}</p>
+        </div>
+        <div class="acc-type-card" onclick="selectAccType(this,'rd')">
+          <span class="material-symbols-rounded">autorenew</span>
+          <h4>${hi?'आवर्ती जमा':'Recurring Deposit'}</h4>
+          <p>${hi?'6.5% ब्याज':'6.5% p.a.'}</p>
+        </div>
+      </div>
+      <div class="tf-field">
+        <label>${hi?'पूरा नाम':'Full Name'}</label>
+        <input type="text" value="Amit Kumar" id="acc-name">
+      </div>
+      <div class="tf-field">
+        <label>${hi?'मोबाइल नंबर':'Mobile Number'}</label>
+        <input type="text" value="+91 ••••••6789" id="acc-mobile">
+      </div>
+      <button class="flow-btn green" onclick="submitAccountOpening()">
+        <span class="material-symbols-rounded">check_circle</span>${hi?'आवेदन जमा करें':'Submit Application'}
+      </button>
+    </div>`);
+  S.flowData.accType='savings';
+  const m=hi?'कौन सा खाता खोलना है? बचत, FD, या RD?':'Which type of account would you like to open?';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+function selectAccType(el, type) {
+  document.querySelectorAll('.acc-type-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); S.flowData.accType=type;
+}
+function submitAccountOpening() {
+  const hi=S.lang==='hi';
+  const typeLabel={'savings':'Savings Account','current':'Current Account','fd':'Fixed Deposit','rd':'Recurring Deposit'}[S.flowData.accType||'savings'];
+  renderProcessing();
+  setTimeout(()=>{
+    const ref='ACC'+Date.now().toString().slice(-8);
+    const now=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    openFlowModal(`
+      <div class="success-header transfer">
+        <div class="success-circle"><span class="material-symbols-rounded">check_circle</span></div>
+        <h3>${hi?'आवेदन सफल!':'Application Submitted!'}</h3>
+        <div class="success-amount" style="font-size:1.4rem">${typeLabel}</div>
+      </div>
+      <div class="receipt-rows">
+        <div class="receipt-row"><span class="receipt-label">${hi?'खाताधारक':'Account Holder'}</span><span class="receipt-val">Amit Kumar</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'खाता प्रकार':'Account Type'}</span><span class="receipt-val navy">${typeLabel}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'संदर्भ संख्या':'Reference No.'}</span><span class="receipt-val">${ref}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'स्थिति':'Status'}</span><span class="receipt-val green">Under Verification</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'तारीख':'Date & Time'}</span><span class="receipt-val">${now}</span></div>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-btn secondary" onclick="closeFlow()">Close</button>
+        <button class="receipt-btn primary" onclick="closeFlow()">Done</button>
+      </div>`);
+    const msg=hi?`${typeLabel} के लिए आवेदन सफलतापूर्वक जमा हो गया। Ref: ${ref}`:`Your ${typeLabel} application is submitted. Ref: ${ref}`;
+    appendBot(msg); speak(msg);
+  },2000);
+}
+
+// =====================================================
+//  FLOW: CARD SERVICES
+// =====================================================
+function renderCardStep0() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#FEF2F2"><span class="material-symbols-rounded" style="color:var(--red)">credit_card</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'कार्ड सेवाएं':'Card Services'}</div>
+        <div class="flow-subtitle">${hi?'क्या करना है?':'What would you like to do?'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-body">
+      <div class="card-options">
+        <div class="card-option-btn" onclick="cardAction('block')">
+          <div class="co-icon" style="background:#FEF2F2"><span class="material-symbols-rounded" style="color:var(--red)">block</span></div>
+          <div><div class="co-title">${hi?'कार्ड ब्लॉक करें':'Block Card'}</div><div class="co-sub">${hi?'खोए या चोरी हुए कार्ड के लिए':'For lost or stolen card'}</div></div>
+          <span class="material-symbols-rounded" style="margin-left:auto;color:var(--text-ghost);font-size:18px">chevron_right</span>
+        </div>
+        <div class="card-option-btn" onclick="cardAction('replace')">
+          <div class="co-icon" style="background:#EEF2FF"><span class="material-symbols-rounded" style="color:var(--navy)">sync_alt</span></div>
+          <div><div class="co-title">${hi?'कार्ड बदलें':'Replace Card'}</div><div class="co-sub">${hi?'क्षतिग्रस्त या समाप्त कार्ड':'Damaged or expired card'}</div></div>
+          <span class="material-symbols-rounded" style="margin-left:auto;color:var(--text-ghost);font-size:18px">chevron_right</span>
+        </div>
+        <div class="card-option-btn" onclick="cardAction('limit')">
+          <div class="co-icon" style="background:#FFF7ED"><span class="material-symbols-rounded" style="color:var(--saffron)">tune</span></div>
+          <div><div class="co-title">${hi?'लेनदेन सीमा बदलें':'Change Transaction Limit'}</div><div class="co-sub">${hi?'दैनिक ATM या खरीदारी सीमा':'Daily ATM or purchase limit'}</div></div>
+          <span class="material-symbols-rounded" style="margin-left:auto;color:var(--text-ghost);font-size:18px">chevron_right</span>
+        </div>
+        <div class="card-option-btn" onclick="cardAction('pin')">
+          <div class="co-icon" style="background:#F0FDF4"><span class="material-symbols-rounded" style="color:var(--green)">lock_reset</span></div>
+          <div><div class="co-title">${hi?'PIN बदलें':'Change Card PIN'}</div><div class="co-sub">${hi?'नया PIN सेट करें':'Set a new secure PIN'}</div></div>
+          <span class="material-symbols-rounded" style="margin-left:auto;color:var(--text-ghost);font-size:18px">chevron_right</span>
+        </div>
+      </div>
+    </div>`);
+  const m=hi?'कार्ड सेवाओं में आपका स्वागत है। क्या करना चाहते हैं?':'Welcome to Card Services. What would you like to do?';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+function cardAction(type) {
+  S.flowData.cardAction=type;
+  const hi=S.lang==='hi';
+  const label={'block':hi?'कार्ड ब्लॉक':'Block Card','replace':hi?'कार्ड बदलें':'Replace Card','limit':hi?'सीमा बदलें':'Change Limit','pin':hi?'PIN बदलें':'Change PIN'}[type];
+  S.flowData.cardLabel=label;
+  renderPinStep('card');
+}
+
+// =====================================================
+//  FLOW: AGENT
+// =====================================================
+function renderAgentFlow() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#EEF2FF"><span class="material-symbols-rounded">support_agent</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'एजेंट से कनेक्ट करें':'Connect to Agent'}</div>
+        <div class="flow-subtitle">${hi?'लाइव वीडियो सहायता':'Live video assistance'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="agent-connecting">
+      <div class="agent-video-frame">
+        <div class="agent-pulse"><span class="material-symbols-rounded">videocam</span></div>
+      </div>
+      <h3>${hi?'एजेंट ढूंढ रहे हैं…':'Finding an available agent…'}</h3>
+      <p>${hi?'कृपया प्रतीक्षा करें। आप जल्द ही एक बैंकिंग विशेषज्ञ से जुड़ेंगे।':'Please wait. You will be connected to a banking specialist shortly.'}</p>
+      <div class="agent-status">${hi?'ऑनलाइन एजेंट: 3 उपलब्ध':'Online agents: 3 available'}</div>
+      <div class="queue-info">
+        <div><div class="qi-label">${hi?'आपकी स्थिति':'Your position'}</div><div class="qi-val">#1 in queue</div></div>
+        <div><div class="qi-label">${hi?'अनुमानित समय':'Estimated wait'}</div><div class="qi-val">~2 min</div></div>
+      </div>
+      <button class="flow-btn danger" onclick="closeFlow()">
+        <span class="material-symbols-rounded">call_end</span>${hi?'रद्द करें':'Cancel Request'}
+      </button>
+    </div>`);
+  const m=hi?'एजेंट से कनेक्ट हो रहे हैं, कृपया थोड़ा रुकें।':'Connecting you to a live banking agent. Please wait a moment.';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+
+// =====================================================
+//  PIN STEP (shared across flows)
+// =====================================================
+function renderPinStep(flowType) {
+  S.flowData.pinEntry=''; S.flowData.pinAttempts=0;
+  const hi=S.lang==='hi';
+  const flowLabel={'withdraw':hi?'निकासी':'Withdrawal','transfer':hi?'ट्रांसफर':'Transfer','card':S.flowData.cardLabel||'Card Service'}[flowType];
+  S.flow=flowType;
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon"><span class="material-symbols-rounded">lock</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'PIN दर्ज करें':'Enter Your PIN'}</div>
+        <div class="flow-subtitle">${hi?'4-अंकीय ATM/Debit PIN':'4-digit ATM / Debit card PIN'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-steps">
+      <div class="step-dot done">✓</div><div class="step-line done"></div>
+      <div class="step-dot active">2</div><div class="step-line"></div>
+      <div class="step-dot pending">3</div><div class="step-line"></div>
+      <div class="step-dot pending">✓</div>
+    </div>
+    <div class="flow-body">
+      <p style="text-align:center;font-size:.85rem;color:var(--text-soft);font-family:var(--font-body);margin-bottom:18px">${flowLabel} ${hi?'के लिए प्रमाणीकरण आवश्यक है':'requires authentication'}</p>
+      <div class="pin-display" id="pin-display">
+        <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+      </div>
+      <div class="pin-hint">${hi?'डेमो PIN: 1 2 3 4':'Demo PIN: 1 2 3 4'}</div>
+      <div class="pin-pad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-key" onclick="pinPress('${n}')">${n}</button>`).join('')}
+        <button class="pin-key empty"></button>
+        <button class="pin-key" onclick="pinPress('0')">0</button>
+        <button class="pin-key del" onclick="pinBackspace()">⌫</button>
+      </div>
+      <div class="pin-error-msg" id="pin-err"></div>
+    </div>`);
+  const m=hi?'कृपया अपना 4-अंकीय PIN दर्ज करें।':'Please enter your 4-digit ATM PIN to confirm.';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+function pinPress(d) {
+  if((S.flowData.pinEntry||'').length>=4) return;
+  S.flowData.pinEntry=(S.flowData.pinEntry||'')+d;
+  updatePinDots();
+  if(S.flowData.pinEntry.length===4) setTimeout(validatePin,200);
+}
+function pinBackspace() {
+  S.flowData.pinEntry=(S.flowData.pinEntry||'').slice(0,-1);
+  updatePinDots();
+}
+function updatePinDots() {
+  const dots=document.querySelectorAll('.pin-dot');
+  const n=(S.flowData.pinEntry||'').length;
+  dots.forEach((d,i)=>d.classList.toggle('filled',i<n));
+}
+function validatePin() {
+  if(S.flowData.pinEntry===CORRECT_PIN) {
+    renderOtpStep();
+  } else {
+    S.flowData.pinAttempts=(S.flowData.pinAttempts||0)+1;
+    document.querySelectorAll('.pin-dot').forEach(d=>{ d.classList.add('error'); setTimeout(()=>d.classList.remove('error'),500); });
+    const hi=S.lang==='hi';
+    document.getElementById('pin-err').textContent=hi?`गलत PIN। ${3-(S.flowData.pinAttempts)} प्रयास शेष।`:`Incorrect PIN. ${3-(S.flowData.pinAttempts)} attempt(s) left.`;
+    S.flowData.pinEntry='';
+    setTimeout(()=>{ updatePinDots(); document.getElementById('pin-err').textContent=''; },700);
+    if(S.flowData.pinAttempts>=3){ closeFlow(); appendBot(S.lang==='hi'?'बहुत अधिक गलत प्रयास। कृपया शाखा से संपर्क करें।':'Too many incorrect attempts. Please contact the branch.'); }
+  }
+}
+
+// =====================================================
+//  OTP STEP
+// =====================================================
+function renderOtpStep() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#F0FDF4"><span class="material-symbols-rounded" style="color:var(--green)">sms</span></div>
+      <div class="flow-title-block">
+        <div class="flow-title">${hi?'OTP सत्यापन':'OTP Verification'}</div>
+        <div class="flow-subtitle">${hi?'मोबाइल पर भेजा गया':'Sent to your registered mobile'}</div>
+      </div>
+      <button class="flow-close" onclick="closeFlow()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="flow-steps">
+      <div class="step-dot done">✓</div><div class="step-line done"></div>
+      <div class="step-dot done">✓</div><div class="step-line done"></div>
+      <div class="step-dot active">3</div><div class="step-line"></div>
+      <div class="step-dot pending">✓</div>
+    </div>
+    <div class="flow-body">
+      <div class="otp-info">
+        <p>${hi?'OTP भेजा गया:':'OTP sent to:'} <strong>+91 ••••••6789</strong></p>
+        <p style="font-size:.78rem;color:var(--text-ghost);margin-top:4px">${hi?'डेमो OTP: 1 2 3 4':'Demo OTP: 1 2 3 4'}</p>
+      </div>
+      <div class="otp-boxes">
+        <input class="otp-box" id="otp0" maxlength="1" type="text" inputmode="numeric" oninput="otpInput(0)" onkeydown="otpKey(0,event)">
+        <input class="otp-box" id="otp1" maxlength="1" type="text" inputmode="numeric" oninput="otpInput(1)" onkeydown="otpKey(1,event)">
+        <input class="otp-box" id="otp2" maxlength="1" type="text" inputmode="numeric" oninput="otpInput(2)" onkeydown="otpKey(2,event)">
+        <input class="otp-box" id="otp3" maxlength="1" type="text" inputmode="numeric" oninput="otpInput(3)" onkeydown="otpKey(3,event)">
+      </div>
+      <div class="otp-resend">${hi?'OTP नहीं मिला?':'Didn\'t receive OTP?'} <span onclick="resendOtp()">${hi?'पुनः भेजें':'Resend'}</span></div>
+      <button class="flow-btn" onclick="validateOtp()">
+        <span class="material-symbols-rounded">verified</span>${hi?'सत्यापित करें':'Verify & Confirm'}
+      </button>
+      <div class="pin-error-msg" id="otp-err"></div>
+    </div>`);
+  setTimeout(()=>document.getElementById('otp0').focus(),100);
+  const m=hi?'एक OTP आपके रजिस्टर्ड नंबर पर भेजा गया है।':'An OTP has been sent to your registered mobile number.';
+  setTimeout(()=>{appendBot(m);speak(m);},300);
+}
+function otpInput(i) {
+  const el=document.getElementById('otp'+i);
+  el.value=el.value.replace(/\D/g,'').slice(-1);
+  el.classList.toggle('filled',el.value.length>0);
+  if(el.value&&i<3) document.getElementById('otp'+(i+1)).focus();
+}
+function otpKey(i,e) {
+  if(e.key==='Backspace'&&!document.getElementById('otp'+i).value&&i>0) document.getElementById('otp'+(i-1)).focus();
+}
+function getOtpValue(){ return [0,1,2,3].map(i=>document.getElementById('otp'+i).value).join(''); }
+function resendOtp(){ const m=S.lang==='hi'?'OTP पुनः भेजा गया।':'OTP resent to your mobile.'; appendBot(m); speak(m); }
+function validateOtp() {
+  const otp=getOtpValue();
+  if(otp.length<4){ alert(S.lang==='hi'?'कृपया पूरा OTP दर्ज करें।':'Please enter the complete OTP.'); return; }
+  if(otp===CORRECT_OTP) {
+    renderProcessing();
+    setTimeout(()=>renderSuccess(),2000);
+  } else {
+    document.getElementById('otp-err').textContent=S.lang==='hi'?'गलत OTP। पुनः प्रयास करें।':'Incorrect OTP. Please try again.';
+    [0,1,2,3].forEach(i=>{ const el=document.getElementById('otp'+i); el.style.borderColor='var(--red)'; el.value=''; el.classList.remove('filled'); });
+    setTimeout(()=>{ [0,1,2,3].forEach(i=>document.getElementById('otp'+i).style.borderColor=''); document.getElementById('otp-err').textContent=''; document.getElementById('otp0').focus(); },700);
+  }
+}
+
+// =====================================================
+//  PROCESSING
+// =====================================================
+function renderProcessing() {
+  const hi=S.lang==='hi';
+  openFlowModal(`
+    <div class="processing-wrap">
+      <div class="processing-spin"></div>
+      <h3>${hi?'प्रसंस्करण हो रहा है…':'Processing…'}</h3>
+      <p>${hi?'कृपया प्रतीक्षा करें। इसमें कुछ सेकंड लगेंगे।':'Please wait. This may take a few seconds.'}</p>
+    </div>`);
+}
+
+// =====================================================
+//  SUCCESS (dynamic by flow)
+// =====================================================
+function renderSuccess() {
+  const hi=S.lang==='hi';
+  const flow=S.flow;
+  const fmt=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const now=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const ref=()=>'TXN'+Date.now().toString().slice(-10);
+
+  if(flow==='withdraw') {
+    const amt=S.flowData.amount; S.balance=Math.max(0,S.balance-amt);
+    const r=ref();
+    openFlowModal(`
+      <div class="success-header">
+        <div class="success-circle"><span class="material-symbols-rounded">check_circle</span></div>
+        <h3>${hi?'नकद जारी किया गया':'Cash Dispensed'}</h3>
+        <div class="success-amount">${fmt(amt)}</div>
+      </div>
+      <div class="receipt-rows">
+        <div class="receipt-row"><span class="receipt-label">${hi?'निकासी':'Withdrawn'}</span><span class="receipt-val">${fmt(amt)}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'खाते से':'From'}</span><span class="receipt-val">SB ••••4821</span></div>
+        <div class="receipt-row"><span class="receipt-label">Reference No.</span><span class="receipt-val">${r}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'दिनांक':'Date & Time'}</span><span class="receipt-val">${now}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'शेष राशि':'Remaining Balance'}</span><span class="receipt-val green">${fmt(S.balance)}</span></div>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-btn secondary" onclick="closeFlow()">Receipt</button>
+        <button class="receipt-btn primary" onclick="closeFlow()">Done</button>
+      </div>`);
+    const m=hi?`₹${amt.toLocaleString('en-IN')} सफलतापूर्वक जारी हो गए। कृपया नोट लें।`:`₹${amt.toLocaleString('en-IN')} dispensed successfully. Please collect your cash.`;
+    appendBot(m); speak(m);
+  }
+
+  else if(flow==='transfer') {
+    const amt=S.flowData.transferAmt; S.balance=Math.max(0,S.balance-amt);
+    const r=ref();
+    openFlowModal(`
+      <div class="success-header transfer">
+        <div class="success-circle"><span class="material-symbols-rounded">check_circle</span></div>
+        <h3>${hi?'ट्रांसफर सफल':'Transfer Successful'}</h3>
+        <div class="success-amount">${fmt(amt)}</div>
+      </div>
+      <div class="receipt-rows">
+        <div class="receipt-row"><span class="receipt-label">${hi?'प्राप्तकर्ता':'To'}</span><span class="receipt-val navy">${S.flowData.recipient}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'तरीका':'Method'}</span><span class="receipt-val">${S.flowData.method||'UPI'}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Reference No.</span><span class="receipt-val">${r}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'दिनांक':'Date & Time'}</span><span class="receipt-val">${now}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'शेष राशि':'Remaining Balance'}</span><span class="receipt-val green">${fmt(S.balance)}</span></div>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-btn secondary" onclick="closeFlow()">Receipt</button>
+        <button class="receipt-btn primary" onclick="closeFlow()">Done</button>
+      </div>`);
+    const m=hi?`${fmt(amt)} सफलतापूर्वक ट्रांसफर हो गए।`:`${fmt(amt)} transferred successfully.`;
+    appendBot(m); speak(m);
+  }
+
+  else if(flow==='card') {
+    const label=S.flowData.cardLabel||'Card Service';
+    openFlowModal(`
+      <div class="success-header transfer">
+        <div class="success-circle"><span class="material-symbols-rounded">check_circle</span></div>
+        <h3>${hi?'सफलतापूर्वक हो गया':'Action Completed'}</h3>
+        <div class="success-amount" style="font-size:1.4rem">${label}</div>
+      </div>
+      <div class="receipt-rows">
+        <div class="receipt-row"><span class="receipt-label">${hi?'कार्ड':'Card'}</span><span class="receipt-val">RuPay ••••4821</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'कार्रवाई':'Action'}</span><span class="receipt-val navy">${label}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Ref No.</span><span class="receipt-val">${ref()}</span></div>
+        <div class="receipt-row"><span class="receipt-label">${hi?'स्थिति':'Status'}</span><span class="receipt-val green">Completed</span></div>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-btn primary" onclick="closeFlow()">Done</button>
+      </div>`);
+    const m=hi?`${label} सफलतापूर्वक पूरा हो गया।`:`${label} completed successfully.`;
+    appendBot(m); speak(m);
+  }
+}
+
+// =====================================================
+//  VOICE INPUT
+// =====================================================
+let recog=null;
+function toggleMic() { S.isListening?stopMic():startMic(); }
+function startMic() {
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Voice not supported in this browser. Try Chrome.');return;}
+  recog=new SR(); recog.lang=S.lang==='hi'?'hi-IN':'en-IN';
+  recog.interimResults=true; recog.continuous=false;
+  recog.onstart=()=>{ S.isListening=true; document.getElementById('mic-btn').classList.add('listening'); document.getElementById('mic-icon').textContent='mic_off'; document.getElementById('mic-label').textContent=S.lang==='hi'?'सुन रहा हूँ...':'Listening...'; };
+  recog.onresult=(e)=>{ document.getElementById('chat-input').value=Array.from(e.results).map(r=>r[0].transcript).join(''); };
+  recog.onend=()=>{ stopMic(); const v=document.getElementById('chat-input').value.trim(); if(v)sendMsg(); };
+  recog.onerror=()=>stopMic();
+  recog.start();
+}
+function stopMic() {
+  S.isListening=false;
+  document.getElementById('mic-btn').classList.remove('listening');
+  document.getElementById('mic-icon').textContent='mic';
+  document.getElementById('mic-label').textContent=UI_TEXT[S.lang].tapSpeak;
+  try{ recog?.stop(); }catch(_){} recog=null;
+}
+
+// =====================================================
+//  TTS
+// =====================================================
+async function speak(text) {
+  if(!text||S.isSpeaking) return;
+  setSpeaking(true);
+  const clean=text.replace(/[\u{1F300}-\u{1FAFF}]/gu,'').replace(/\[\[.*?\]\]/g,'').trim();
+  const lc=S.lang==='hi'?'hi-IN':'en-IN';
+  if(S.sarvamKey) {
+    try {
+      const r=await fetch('https://api.sarvam.ai/text-to-speech',{method:'POST',headers:{'api-subscription-key':S.sarvamKey,'Content-Type':'application/json'},body:JSON.stringify({text:clean.slice(0,500),target_language_code:lc,speaker:'anushka'})});
+      if(!r.ok) throw new Error('Sarvam '+r.status);
+      const d=await r.json();
+      if(d.audios?.[0]){ await playB64(d.audios[0]); setSpeaking(false); return; }
+    } catch(e){ console.warn('Sarvam fallback:',e.message); }
+  }
+  await speakBrowser(clean,lc); setSpeaking(false);
+}
+function playB64(b64) {
+  return new Promise((res,rej)=>{
+    try {
+      const bin=atob(b64),buf=new ArrayBuffer(bin.length),view=new Uint8Array(buf);
+      for(let i=0;i<bin.length;i++) view[i]=bin.charCodeAt(i);
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      ctx.decodeAudioData(buf,(ab)=>{ const s=ctx.createBufferSource(); s.buffer=ab; s.connect(ctx.destination); s.onended=res; s.start(0); },rej);
+    }catch(e){rej(e);}
+  });
+}
+function speakBrowser(text,lang) {
+  return new Promise(res=>{ if(!window.speechSynthesis){res();return;} window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang=lang; u.rate=.95; u.onend=res; u.onerror=res; window.speechSynthesis.speak(u); });
+}
+function setSpeaking(v){ S.isSpeaking=v; document.getElementById('status-dot').classList.toggle('speaking',v); document.querySelectorAll('.wv-bar').forEach(b=>b.classList.toggle('active',v)); }
+function fmtInr(n){ return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// =====================================================
+//  BOOT
+// =====================================================
+window.addEventListener('load',()=>{
+  const g=localStorage.getItem('ss_groq'), sv=localStorage.getItem('ss_sarvam');
+  if(g){ document.getElementById('groq-key-input').value=g; S.groqKey=g; }
+  if(sv){ document.getElementById('sarvam-key-input').value=sv; S.sarvamKey=sv; }
+});
+</script>
+</body>
+</html>
